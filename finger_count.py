@@ -1,5 +1,6 @@
 import cv2
 import serial
+import time
 import numpy as np
 import mediapipe as mp
 from mediapipe.tasks import python
@@ -27,33 +28,40 @@ THUMB_ANGLE_THRESHOLD = 2.5 #rad
 def main():
     stream = cv2.VideoCapture(0)
     timestamp = 0
-
-    while True:
-        if cv2.waitKey(1) == 27:
-            break
+    with serial.Serial('COM3', 9600, timeout = 1) as ser:
+        time.sleep(2)
+        while True:
+            if cv2.waitKey(1) == 27:
+                break
         
-        ret, frame = stream.read()
+            ret, frame = stream.read()
         
-        if not ret:
-            print("Error: no valid frame")
-            break
+            if not ret:
+                print("Error: no valid frame")
+                break
 
-        frame = cv2.flip(frame, 1)
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            frame = cv2.flip(frame, 1)
+            rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-        mp_image = mp.Image(image_format = mp.ImageFormat.SRGB, data = rgb)
-        result = MODEL.detect_for_video(mp_image, timestamp)
-        timestamp += 1
+            mp_image = mp.Image(image_format = mp.ImageFormat.SRGB, data = rgb)
+            result = MODEL.detect_for_video(mp_image, timestamp)
+            timestamp += 1
 
-        points = get_points(result, frame)
-        draw_skeleton(points, frame)
+            points = get_points(result, frame)
+            finger_count = get_finger_count(points)
+            draw_skeleton(points, frame)
+
+            cv2.putText(img = frame, 
+                        text = f'Finger count: {finger_count}',
+                        org = (20,30),
+                        fontFace = cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale = 1,
+                        thickness = 2,
+                        color = (255,255,255))
         
-        cv2.imshow("Finger Tracking", frame)
+            cv2.imshow("Finger Tracking", frame)
 
-        finger_count = get_finger_count(points)
-
-        with serial.Serial(port='COM3', baudrate=9600) as ser:
-            ser.write(f'{finger_count.encode()}\n')
+            ser.write(f'{finger_count}\n'.encode())
 
     stream.release()
     cv2.destroyAllWindows()

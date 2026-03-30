@@ -1,4 +1,4 @@
-const int ledPins[] = {2,4,6,8,10};
+const int ledPins[] = {10,8,6,4,2};
 
 void setup(){
     for(int i = 0; i < 5; i++){
@@ -8,7 +8,7 @@ void setup(){
 }
 
 void loop(){
-    int fingerCount = (int)Serial.parseInt()
+    int fingerCount = Serial.parseInt();
 
     for(int i = 0; i < 5; i++){
         if(fingerCount >= i + 1){
